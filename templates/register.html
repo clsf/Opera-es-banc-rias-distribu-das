@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script>
+        function updateForm() {
+            var accountType = document.getElementById("account_type").value;
+            var pessoaFisicaFields = document.getElementById("pessoa_fisica_fields");
+            var pessoaJuridicaFields = document.getElementById("pessoa_juridica_fields");
+            var compartilhadaFields = document.getElementById("compartilhada_fields");
+
+            pessoaFisicaFields.style.display = "none";
+            pessoaJuridicaFields.style.display = "none";
+            compartilhadaFields.style.display = "none";
+
+            if (accountType === "pessoa_fisica") {
+                pessoaFisicaFields.style.display = "block";
+            } else if (accountType === "pessoa_juridica") {
+                pessoaJuridicaFields.style.display = "block";
+            } else if (accountType === "compartilhada") {
+                compartilhadaFields.style.display = "block";
+            }
+        }
+
+        function addSharedField() {
+            var sharedFields = document.getElementById("shared_fields");
+            var div = document.createElement("div");
+            div.className = "form-group";
+            div.innerHTML = `
+                <label>Nome:</label>
+                <input type="text" name="shared_names[]" required>
+                <label>CPF:</label>
+                <input type="text" name="shared_cpfs[]" required>
+                <button type="button" onclick="removeSharedField(this)">Remover</button>
+            `;
+            sharedFields.appendChild(div);
+        }
+
+        function removeSharedField(button) {
+            var div = button.parentElement;
+            div.remove();
+        }
+
+        window.onload = function() {
+            updateForm();
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h2>Registrar</h2>
+        <form method="post" action="{{ url_for('register') }}">
+            <div class="form-group">
+                <label for="account_type">Tipo de Conta:</label>
+                <select id="account_type" name="account_type" onchange="updateForm()" required>
+                    <option value="pessoa_fisica">Pessoa Física</option>
+                    <option value="pessoa_juridica">Pessoa Jurídica</option>
+                    <option value="compartilhada">Compartilhada</option>
+                </select>
+            </div>
+
+            <div id="pessoa_fisica_fields" style="display: none;">
+                <div class="form-group">
+                    <label for="nome">Nome:</label>
+                    <input type="text" id="nome" name="nome" required>
+                </div>
+                <div class="form-group">
+                    <label for="cpf">CPF:</label>
+                    <input type="text" id="cpf" name="cpf" required>
+                </div>
+            </div>
+
+            <div id="pessoa_juridica_fields" style="display: none;">
+                <div class="form-group">
+                    <label for="nome_fantasia">Nome Fantasia:</label>
+                    <input type="text" id="nome_fantasia" name="nome_fantasia" required>
+                </div>
+                <div class="form-group">
+                    <label for="cnpj">CNPJ:</label>
+                    <input type="text" id="cnpj" name="cnpj" required>
+                </div>
+            </div>
+
+            <div id="compartilhada_fields" style="display: none;">
+                <div id="shared_fields"></div>
+                <button type="button" onclick="addSharedField()">Adicionar Pessoa</button>
+                
+            </div>
+
+            <div class="form-group">
+                
+                <label for="password">Senha:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit">Registrar</button>
+            <p>Já tem uma conta? <a href="{{ url_for('login') }}">Login</a></p>
+        </form>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+    </div>
+</body>
+</html>

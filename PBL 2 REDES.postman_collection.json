@@ -1,0 +1,164 @@
+{
+	"info": {
+		"_postman_id": "d8edfe2c-42f5-451d-89f8-e5d85091699d",
+		"name": "PBL 2 REDES",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "36355902"
+	},
+	"item": [
+		{
+			"name": "CreatAccount",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"tipo_conta\": \"pessoa_fisica\",\n    \"name\": \"Fulano de Tal\",\n    \"cpf\": \"123.456.789-00\",\n    \"password\": \"senha123\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:5000/contas",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "5000",
+					"path": [
+						"contas"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetAccounts",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:5000/contas/cpf/123",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "5000",
+					"path": [
+						"contas",
+						"cpf",
+						"123"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Prepare to deposit",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"account_id\":1,\n    \"amount\": 10\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:5000/prepare",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "5000",
+					"path": [
+						"prepare"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Deposit",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"account_id\": 1,\n    \"amount\": 10\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:5000/contas/deposit",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "5000",
+					"path": [
+						"contas",
+						"deposit"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Commit transfer",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"account_id\": 1,\n    \"amount\": 10\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:5000/commit",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "5000",
+					"path": [
+						"commit"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
