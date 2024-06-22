@@ -2,6 +2,7 @@ from account.fisicPersonAccount import PfAccount
 from  account.juridicPersonAccount import PjAccount
 from account.sharedAccount import SharedAccount
 import requests
+from flask import request
 import os 
 import json
 class Bank:
@@ -23,7 +24,9 @@ class Bank:
             if isinstance(account, PfAccount) and account.cpf == cpf:
                 return None
         self.numberAccount += 1
-        account = PfAccount(self.numberAccount, 0, cpf, name, passowrd)
+        host = request.host.split(':')[0]  # Obtém o endereço IP
+        port = request.host.split(':')[1]  # Obtém a porta
+        account = PfAccount(self.numberAccount, 0, cpf, name, passowrd, host+port)
         self.accounts[self.numberAccount] = account
         return account
 
@@ -36,38 +39,40 @@ class Bank:
 
 
     def getByAccountNumber(self, numberAccount, bankName):
-        account = None;
+        
         if bankName == "BANK_0":
-            numberAccount = int(numberAccount)
-            if numberAccount in self.accounts:
-                return self.accounts[numberAccount]
-            else:
-                print(f"Conta com número {numberAccount} não encontrada.")
-                return None
+           return self.getByAccountNumberOnSelf(numberAccount)
 
         bank_url = os.getenv(bankName) 
         if bank_url is not None:
             headers = {'Content-Type': 'application/json'}
-            params = {'numberAccount': numberAccount}
-
+           
             try:
-                    response = requests.get(f"http://{bank_url}/accounts/{numberAccount}", headers=headers, params=params)
+                    response = requests.get(f"http://{bank_url}/accounts/{numberAccount}", headers=headers)
                     response.raise_for_status()
-                    account.extend(response.json())
-            except requests.exceptions.HTTPError as http_err:
-                if response.status_code == 400 or response.status_code == 500:
-                    account = None
+                    return response.json()
             except requests.exceptions.RequestException as req_err:
                 print(f"Request Error from {bank_url}: {req_err}")
-            
-            return account
+
 
         return None
 
-
+    def getByAccountNumberOnSelf(self, numberAccount):
+        numberAccount = int(numberAccount)
+        if numberAccount in self.accounts:
+            return self.accounts[numberAccount]
+        else:
+            print(f"Conta com número {numberAccount} não encontrada.")
+            return None
         
 
     def getAccountByCpf(self, cpf):
+        accountsFinded = self.getAccountByCPFOnSelf(cpf)
+        otherBanksAccount = Bank.getOtherBanksAccount(cpf,"cpf")   
+        all_accounts = accountsFinded + otherBanksAccount
+        return all_accounts
+
+    def getAccountByCPFOnSelf(self, cpf):
         accountsFinded = []
         for account in self.accounts.values():
             if isinstance(account, PfAccount) and account.cpf==cpf:
@@ -75,20 +80,23 @@ class Bank:
             
             elif isinstance(account, SharedAccount) and account.verifyHoldByCpf(cpf):
                 accountsFinded.append(account)
-        
-        otherBanksAccount = Bank.getOtherBanksAccount("cpf", cpf)        
-        all_accounts = accountsFinded + otherBanksAccount
-        return all_accounts
+        return accountsFinded
+
+
 
     def getAccountByCnpj(self, cnpj):
+        accountsFinded = self.getAccountByCnpjOnSelf(cnpj)
+        otherBanksAccount = Bank.getOtherBanksAccount(cnpj,"cnpj")        
+        all_accounts = accountsFinded + otherBanksAccount
+        return all_accounts
+    
+    def getAccountByCnpjOnSelf(self, cnpj):
         accountsFinded = []
         for account in self.accounts.values():
             if isinstance(account, PjAccount) and account.cnpj == cnpj:
                 accountsFinded.append(account)
+        return accountsFinded
 
-        otherBanksAccount = Bank.getOtherBanksAccount("cnpj", cnpj)        
-        all_accounts = accountsFinded + otherBanksAccount
-        return all_accounts
     
     def prepareTransfer(self, account, amount, transaction_timestamp):
         if account in self.accounts:
@@ -143,7 +151,7 @@ class Bank:
                         }
 
                         try:
-                            response = requests.get(f"http://{bank_url}/prepareOnSelf", headers=headers, data=json.dumps(body))
+                            response = requests.post(f"http://{bank_url}/prepareOnSelf", headers=headers, data=json.dumps(body))
                             response.raise_for_status()
                             prepared.append(transfer)   
                         except requests.exceptions.HTTPError as http_err:
@@ -204,7 +212,7 @@ class Bank:
                             tryAgain = True;
                             while tryAgain:
                                 try:
-                                    response = requests.get(f"http://{bank_url}/commit", headers=headers, data=json.dumps(body))
+                                    response = requests.post(f"http://{bank_url}/commit", headers=headers, data=json.dumps(body))
                                     response.raise_for_status()
                                     tryAgain = False
                                     totalAmount+= transfer.amount
@@ -213,7 +221,7 @@ class Bank:
                                         tryAgain = True
                                 except requests.exceptions.RequestException as req_err:
                                     print(f"Request Error from {bank_url}: {req_err}")
-
+                print('Indo depositar')
                 self.deposit(account_destiny, totalAmount, bank_destiny)                    
                 return "Success"
 
@@ -221,6 +229,7 @@ class Bank:
             return "Transfer destination not found"
 
     def depositOnSelf(self, account, amount):
+        print("OLHA O DEPOSITO CHEGOU")
         account = int(account)
         account = self.accounts[account]
         if account != None:            
@@ -231,27 +240,30 @@ class Bank:
         
         
     def deposit(self, account, amount, bankName):
+        print('Entrou aqui no deposit')
         if bankName == "BANK_0":
             return self.depositOnSelf(account, amount)
         
         bank_url = os.getenv(bankName) 
         if bank_url is not None:
             headers = {'Content-Type': 'application/json'}
-
+            print('Entrou aqui no deposit url')
             body = {
                 "account_id": account,
                 "amount": amount
             }
-
-            try:
-                response = requests.get(f"http://{bank_url}/accounts/depositOnSelf", headers=headers, data=json.dumps(body))
-                response.raise_for_status()
-                return "deposit"
-            except requests.exceptions.HTTPError as http_err:
-                if response.status_code == 400 or response.status_code == 500:
-                    return "Account not found"
-            except requests.exceptions.RequestException as req_err:
-                print(f"Request Error from {bank_url}: {req_err}")
+            tryAgain = True;
+            while tryAgain:
+                try:
+                    response = requests.post(f"http://{bank_url}/account/depositOnSelf", headers=headers, data=json.dumps(body))
+                    response.raise_for_status()
+                    tryAgain = False
+                    return "deposit"
+                except requests.exceptions.HTTPError as http_err:
+                    if response.status_code == 500:
+                        tryAgain = True
+                except requests.exceptions.RequestException as req_err:
+                    print(f"Request Error from {bank_url}: {req_err}")
             
             return account
         return "Account or Bank not found"
@@ -265,12 +277,11 @@ class Bank:
         return "Account not found"
     
     def getOtherBanksAccount(document, type):
-        bank1_url = os.getenv('BANK1_URL') 
-        bank2_url = os.getenv('BANK2_URL')
+        bank1_url = os.getenv('BANK_1') 
+        bank2_url = os.getenv('BANK_2')
 
         headers = {'Content-Type': 'application/json'}
 
-        params = {'type': type,'document': document}
 
         banks = [bank1_url, bank2_url]
         accounts = []
@@ -278,7 +289,7 @@ class Bank:
         for bank_url in banks:
             if bank1_url != None:
                 try:
-                    response = requests.get(f"http://{bank_url}/accounts/{type}/{document}", headers=headers, params=params)
+                    response = requests.get(f"http://{bank_url}/accountSOnSelf/{type}/{document}", headers=headers)
                     response.raise_for_status()
                     accounts.extend(response.json())
                 except requests.exceptions.HTTPError as http_err:

@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from bank import Bank
 from prepareDTO import PrepareDTO
 import time
-
+import os
 
 app = Flask(__name__)
 bank = Bank("Claudia Bank")
@@ -45,10 +45,24 @@ def buscar_conta(type, document):
        accounts =  bank.getAccountByCnpj(document)
     else:
         return jsonify({"error": "Tipo de documento inválido. Use 'cpf' ou 'cnpj'"}), 400
-
-    serialized_accounts = [account.__dict__ for account in accounts]
+    
+    serialized_accounts = [account.to_dict() if hasattr(account, 'to_dict') else account for account in accounts]
 
     return jsonify(serialized_accounts), 200
+
+@app.route('/accountSOnSelf/<type>/<document>', methods=['GET'])
+def buscar_contaOnSelf(type, document):
+    if type == 'cpf':
+        accounts = bank.getAccountByCPFOnSelf(document)
+    elif type == 'cnpj':
+       accounts =  bank.getAccountByCnpjOnSelf(document)
+    else:
+        return jsonify({"error": "Tipo de documento inválido. Use 'cpf' ou 'cnpj'"}), 400
+
+    serialized_accounts = [account.to_dict() if hasattr(account, 'to_dict') else account for account in accounts]
+
+    return jsonify(serialized_accounts), 200
+
 
 @app.route('/accounts/bank/<bankName>/<accountNumber>', methods=['GET'])
 def getAccountByNumber(accountNumber, bankName):
@@ -56,16 +70,17 @@ def getAccountByNumber(accountNumber, bankName):
     if account is None:
         return jsonify({"error": "Conta não encontrada"}), 400 
     
-    serialized_account = [account.__dict__]
-    return jsonify(serialized_account), 200
+    #serialized_account = [account.to_dict()]
+    return jsonify(account), 200
 
 # Chamada interna
 @app.route('/accounts/<accountNumber>', methods=['GET'])
-def getAccountByNumberOnSelfBank(accountNumber, bankName):
-    account = bank.getByAccountNumber(accountNumber, bankName)
+def getAccountByNumberOnSelfBank(accountNumber):
+    account = bank.getByAccountNumberOnSelf(accountNumber)
     if account is None:
         return jsonify({"error": "Conta não encontrada"}), 400 
-    return jsonify(account), 200
+    serialized_account = [account.to_dict()]
+    return jsonify(serialized_account), 200
 
 
 @app.route('/prepareOnSelf', methods=['POST'])
@@ -126,11 +141,14 @@ def depoiste():
     else:
         return  jsonify({"error": "Account not found"}), 404
 
+
+# Chamada Interna
 @app.route('/account/depositOnSelf', methods=['POST'])
 def depoisteOnSelf():
     data = request.json
     account_id = data['account_id']
     amount = data['amount']
+    print('Chegou mami')
     message = bank.depositOnSelf(account_id, amount)
     if message == "deposit":
         return jsonify({"status": "deposited"}), 200
@@ -188,4 +206,9 @@ def receiveTransfer():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    try:
+        port = int(os.environ.get('FLASK_PORT', 5000))
+        app.run(debug=True, host='0.0.0.0', port=port)
+    except Exception:
+         app.run(debug=True)
+   
