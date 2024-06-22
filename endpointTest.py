@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 from bank import Bank
+from prepareDTO import PrepareDTO
 import time
 
 
@@ -36,12 +37,12 @@ def criar_conta():
     return jsonify({"message": f"Conta {tipo_conta} criada com sucesso: {conta}"}), 201
 
 
-@app.route('/contas/<tipo>/<documento>', methods=['GET'])
-def buscar_conta(tipo, documento):
-    if tipo == 'cpf':
-        accounts = bank.getAccountByCpf(documento)
-    elif tipo == 'cnpj':
-       accounts =  bank.getAccountByCnpj(documento)
+@app.route('/accounts/<type>/<document>', methods=['GET'])
+def buscar_conta(type, document):
+    if type == 'cpf':
+        accounts = bank.getAccountByCpf(document)
+    elif type == 'cnpj':
+       accounts =  bank.getAccountByCnpj(document)
     else:
         return jsonify({"error": "Tipo de documento inválido. Use 'cpf' ou 'cnpj'"}), 400
 
@@ -49,9 +50,26 @@ def buscar_conta(tipo, documento):
 
     return jsonify(serialized_accounts), 200
 
+@app.route('/accounts/bank/<bankName>/<accountNumber>', methods=['GET'])
+def getAccountByNumber(accountNumber, bankName):
+    account = bank.getByAccountNumber(accountNumber, bankName)
+    if account is None:
+        return jsonify({"error": "Conta não encontrada"}), 400 
+    
+    serialized_account = [account.__dict__]
+    return jsonify(serialized_account), 200
 
-@app.route('/prepare', methods=['POST'])
-def prepare():
+# Chamada interna
+@app.route('/accounts/<accountNumber>', methods=['GET'])
+def getAccountByNumberOnSelfBank(accountNumber, bankName):
+    account = bank.getByAccountNumber(accountNumber, bankName)
+    if account is None:
+        return jsonify({"error": "Conta não encontrada"}), 400 
+    return jsonify(account), 200
+
+
+@app.route('/prepareOnSelf', methods=['POST'])
+def prepareOnSelf():
     data = request.json
     account_id = data['account_id']
     amount = data['amount']
@@ -67,13 +85,53 @@ def prepare():
         return jsonify({"status": "insufficient_funds"}), 400
     else:
         return jsonify({"error": "Account not found"}), 404
+
+
+@app.route('/transfer', methods=['POST'])
+def transfer():
+    data = request.json
+
+    account_destiny=  data.get('account_destiny')
+    bank_destiny= data["bank_destiny"]
+
+    results = []
+    transfers = data['transfer']
+    for item in transfers:
+        account_id = item.get('account_id')
+        amount = item.get('amount')
+        bank_name = item.get('bank_name')
+        transaction_timestamp = int(time.time() * 1000)    
+        results.append(PrepareDTO(account_id, amount, bank_name, transaction_timestamp))
+
+    message = bank.prepareAllToTransfer(results, account_destiny, bank_destiny)
+
+    if message == "Transfer destination not found":
+        return jsonify({"error": "Transfer destination not found"}), 404
+    elif message == "Error":
+        return jsonify({"error":"Error to transfer amount, any bank reject the request. Consult your balance in your bank"}), 500
     
-@app.route('/contas/deposit', methods=['POST'])
+    return jsonify({"status":"Success"})
+
+
+
+@app.route('/account/deposit', methods=['POST'])
 def depoiste():
     data = request.json
     account_id = data['account_id']
+    bankName = data['bank_name']
     amount = data['amount']
-    message = bank.deposite(account_id, amount)
+    message = bank.deposit(account_id, amount, bankName)
+    if message == "deposit":
+        return jsonify({"status": "deposited"}), 200
+    else:
+        return  jsonify({"error": "Account not found"}), 404
+
+@app.route('/account/depositOnSelf', methods=['POST'])
+def depoisteOnSelf():
+    data = request.json
+    account_id = data['account_id']
+    amount = data['amount']
+    message = bank.depositOnSelf(account_id, amount)
     if message == "deposit":
         return jsonify({"status": "deposited"}), 200
     else:
@@ -117,6 +175,17 @@ def rollback():
         return jsonify({"status": "rolled_back"})
     else:
         return jsonify({"error": "Account not found"}), 404
+    
+@app.route('/receiveTransfer', methods=['POST'])
+def receiveTransfer():
+    data = request.json
+    account_id = data['account_id']
+    amount = data['amount']
+
+    bank.depositOnSelf(account_id, amount)
+
+    return jsonify({"status": "receive"})
+
 
 if __name__ == '__main__':
     app.run(debug=True)
