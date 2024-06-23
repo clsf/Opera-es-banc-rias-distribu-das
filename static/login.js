@@ -42,8 +42,8 @@ $(document).ready(function() {
             contentType: "application/json",
             data: JSON.stringify(data),
             success: function(response) {
-                $('#resultado').html(`<div class="alert alert-success" role="alert">${response.message}</div>`);
-                // Aqui você pode redirecionar o usuário para a página de perfil ou outra página
+                sessionStorage.setItem('account', JSON.stringify(response));
+                window.location.href = "/home";
             },
             error: function(xhr, status, error) {
                 var errorMessage = xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : "Erro ao fazer login";

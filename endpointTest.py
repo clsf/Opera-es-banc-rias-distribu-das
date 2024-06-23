@@ -5,7 +5,13 @@ import time
 import os
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
-bank = Bank("Claudia Bank")
+nameToBank = os.getenv('BANK_NAME') 
+bank = Bank(nameToBank)
+
+
+@app.route('/bank_name', methods=['GET'])
+def get_bank_name():
+    return jsonify({"name": bank.name})
 
 @app.route('/login')
 def login():
@@ -28,6 +34,11 @@ def process_login():
     
     return buscarcontaOnSelfWithPassword(tipo_conta, document, password)
 
+# Rota para a página inicial
+@app.route('/home')
+def home():
+    return render_template('home.html')
+
 @app.route('/register')
 def register():
     return render_template('register.html')
@@ -42,7 +53,7 @@ def criar_conta():
         password = data.get('password')
         name = data.get('name')
         cpf = data.get('cpf')
-        conta = bank.registerPfAccount(cpf, name, password)
+        conta = bank.registerPfAccount(cpf, name, password, bank.name)
     elif tipo_conta == 'pessoa_juridica':
         fantasy_name = data.get('fantasyName')
         cnpj = data.get('cnpj')

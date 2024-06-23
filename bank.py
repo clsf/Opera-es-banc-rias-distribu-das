@@ -7,11 +7,34 @@ import os
 import json
 class Bank:
 
+
     def __init__(self, name):
         self.name = name
         self.accounts = {}
         self.numberAccount = 0;
+        self.other_banks = {}
 
+    
+    def findNamesOthersBanks(self):
+        print('BUSCANDO')
+        bank1_url = os.getenv('BANK_1') 
+        bank2_url = os.getenv('BANK_2') 
+
+        other_banks_urls = [bank1_url, bank2_url]
+        headers = {'Content-Type': 'application/json'}
+        for url in other_banks_urls:
+            try:
+                response = requests.get(f"http://{url}/bank_name", headers=headers)
+                if response.status_code == 200:
+                    bank_name_other = response.json().get('name')
+                    print(f"Nome do banco obtido: {bank_name_other}")
+                    if bank_name_other:
+                        self.other_banks[bank_name_other] = url
+                else:
+                    print(f"Erro ao obter nome do banco: Status Code {response.status_code}")
+            except requests.exceptions.RequestException as e:
+                print(f"Erro ao fazer requisição para obter nome do banco: {e}")
+    
 
     def registerPjAccount(self, cnpj, fantasyName, password):
         self.numberAccount += 1
@@ -19,14 +42,12 @@ class Bank:
         self.accounts[self.numberAccount] = account
         return account
 
-    def registerPfAccount(self, cpf, name, passowrd):
+    def registerPfAccount(self, cpf, name, passowrd, nameBank):
         for account in self.accounts.values():
             if isinstance(account, PfAccount) and account.cpf == cpf:
                 return None
         self.numberAccount += 1
-        host = request.host.split(':')[0]  # Obtém o endereço IP
-        port = request.host.split(':')[1]  # Obtém a porta
-        account = PfAccount(self.numberAccount, 0, cpf, name, passowrd, host+port)
+        account = PfAccount(self.numberAccount, 0, cpf, name, passowrd, nameBank)
         self.accounts[self.numberAccount] = account
         return account
 
@@ -39,11 +60,12 @@ class Bank:
 
 
     def getByAccountNumber(self, numberAccount, bankName):
-        
+        self.findNamesOthersBanks()
         if bankName == "BANK_0":
+           print("pegou aqui ta safe")
            return self.getByAccountNumberOnSelf(numberAccount)
 
-        bank_url = os.getenv(bankName) 
+        bank_url = self.other_banks[bankName] 
         if bank_url is not None:
             headers = {'Content-Type': 'application/json'}
            
@@ -67,8 +89,9 @@ class Bank:
         
 
     def getAccountByCpf(self, cpf):
+        self.findNamesOthersBanks()
         accountsFinded = self.getAccountByCPFOnSelf(cpf)
-        otherBanksAccount = Bank.getOtherBanksAccount(cpf,"cpf")   
+        otherBanksAccount = self.getOtherBanksAccount(cpf,"cpf")   
         all_accounts = accountsFinded + otherBanksAccount
         return all_accounts
 
@@ -85,8 +108,9 @@ class Bank:
 
 
     def getAccountByCnpj(self, cnpj):
+        self.findNamesOthersBanks()
         accountsFinded = self.getAccountByCnpjOnSelf(cnpj)
-        otherBanksAccount = Bank.getOtherBanksAccount(cnpj,"cnpj")        
+        otherBanksAccount = self.getOtherBanksAccount(cnpj,"cnpj")        
         all_accounts = accountsFinded + otherBanksAccount
         return all_accounts
     
@@ -118,13 +142,15 @@ class Bank:
         if account in self.accounts:
             account = self.accounts[account]
             if account.holdBalance < amount:
+                print("vish deu merda")
                 return "insufficient_funds"
-
+            print("não po sucesso")
             account.holdBalance -= amount
             return "ok"
         return "Account not found"
 
     def prepareAllToTransfer(self, transfers, account_destiny, bank_destiny):
+
         account = self.getByAccountNumber(account_destiny, bank_destiny)
         if account :
 
@@ -133,15 +159,17 @@ class Bank:
 
             for transfer in transfers:
                 print(transfer.bankName)
-                if transfer.bankName=="BANK_0":
+                if transfer.bankName== self.name:
+                    print("tudo certo por aqui")
                     message = self.prepareTransfer (transfer.account, transfer.amount, transfer.timesTemp)
                     if message == "prepared":
+                        
                         prepared.append(transfer)
                     else:
                         notPrepared.append(transfer)
                    
                 else:
-                    bank_url = os.getenv(transfer.bankName) 
+                    bank_url = self.other_banks[transfer.bankName] 
                     if bank_url is not None:
                         headers = {'Content-Type': 'application/json'}
                         
@@ -171,7 +199,7 @@ class Bank:
                         message = self.rollback(transfer.account, transfer.amount)
 
                     else:
-                        bank_url = os.getenv(transfer.bankName) 
+                        bank_url = self.other_banks[transfer.bankName]
                         if bank_url is not None:
                             headers = {'Content-Type': 'application/json'}
                             
@@ -196,12 +224,12 @@ class Bank:
             else:
                 totalAmount = 0;
                 for transfer in prepared:
-                    if transfer.bankName=="BANK_0":
+                    if transfer.bankName==self.name:
                         message = self.transfer(transfer.account, transfer.amount)
                         totalAmount+= transfer.amount
 
                     else:
-                        bank_url = os.getenv(transfer.bankName) 
+                        bank_url = self.other_banks[transfer.bankName]
                         if bank_url is not None:
                             headers = {'Content-Type': 'application/json'}
                             
@@ -231,9 +259,13 @@ class Bank:
     def depositOnSelf(self, account, amount):
         print("OLHA O DEPOSITO CHEGOU")
         account = int(account)
+        print(account, amount)
         account = self.accounts[account]
-        if account != None:            
+        
+        if account != None: 
+            amount = int(amount)           
             account.balance+= amount
+            print(account.balance)
             return "deposit"
         else: 
             return "Account not found"
@@ -241,10 +273,13 @@ class Bank:
         
     def deposit(self, account, amount, bankName):
         print('Entrou aqui no deposit')
-        if bankName == "BANK_0":
+        print(bankName, self.name)
+        self.findNamesOthersBanks()
+        if bankName == self.name:
             return self.depositOnSelf(account, amount)
         
-        bank_url = os.getenv(bankName) 
+       
+        bank_url = self.other_banks[bankName]
         if bank_url is not None:
             headers = {'Content-Type': 'application/json'}
             print('Entrou aqui no deposit url')
@@ -276,18 +311,16 @@ class Bank:
             return "ok"
         return "Account not found"
     
-    def getOtherBanksAccount(document, type):
-        bank1_url = os.getenv('BANK_1') 
-        bank2_url = os.getenv('BANK_2')
-
+    def getOtherBanksAccount(self, document, type):
+        
         headers = {'Content-Type': 'application/json'}
 
 
-        banks = [bank1_url, bank2_url]
+        banks = self.other_banks
         accounts = []
 
         for bank_url in banks:
-            if bank1_url != None:
+            if bank_url != None:
                 try:
                     response = requests.get(f"http://{bank_url}/accountSOnSelf/{type}/{document}", headers=headers)
                     response.raise_for_status()
