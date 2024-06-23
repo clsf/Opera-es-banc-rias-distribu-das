@@ -16,5 +16,6 @@ class PfAccount(Account):
             "name": self.name,
             "password": self.password,
             "version": self.version,
-            "bank_name": self.bankName 
+            "bank_name": self.bankName,
+            "type_account":'pf' 
         }

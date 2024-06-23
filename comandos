@@ -1,0 +1,16 @@
+0.0.0.0:5000
+0.0.0.0:5001
+
+BANK_1 = 0.0.0.0:5001
+
+
+FLASK_PORT = 5001
+
+
+docker run -it --network=host -e BANK_NAME=BANK -e BANK_1=0.0.0.0:5001  bank
+
+
+docker build -t bank .
+
+docker run -it --network=host -e FLASK_PORT=5001 -e BANK_1=0.0.0.0:5000 -e BANK_NAME=BANK8 bank
+

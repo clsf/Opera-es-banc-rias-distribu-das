@@ -58,12 +58,12 @@ def criar_conta():
         fantasy_name = data.get('fantasyName')
         cnpj = data.get('cnpj')
         password = data.get('password')
-        conta =  bank.registerPjAccount(cnpj, fantasy_name, password)
+        conta =  bank.registerPjAccount(cnpj, fantasy_name, password, bank.name)
     elif tipo_conta == 'compartilhada':
         names = data.get('names')
         cpfs = data.get('cpfs')
         password = data.get('password')
-        conta = bank.registerSharedAccount(cpfs,names, password)
+        conta = bank.registerSharedAccount(cpfs,names, password, bank.name)
     else:
         return jsonify({"error": "Tipo de conta inválido"}), 400
 
@@ -98,6 +98,7 @@ def buscar_contaOnSelf(type, document):
 
     return jsonify(serialized_accounts), 200
 
+# Chamada Interna
 @app.route('/accountSOnSelf/<type>/<document>/<password>', methods=['GET'])
 def buscarcontaOnSelfWithPassword(type, document, password):
     if type in ['pessoa_fisica', 'compartilhada']:
@@ -111,7 +112,7 @@ def buscarcontaOnSelfWithPassword(type, document, password):
             else:  # compartilhada
                 for account in accounts:
                     if account.password == password:
-                        return jsonify(account), 200
+                        return jsonify(account.to_dict()), 200
                 return jsonify({"error": "Senha incorreta"}), 401
         else:
             return jsonify({"error": "Conta não encontrada"}), 404
@@ -119,7 +120,7 @@ def buscarcontaOnSelfWithPassword(type, document, password):
         account = bank.getAccountByCnpjOnSelf(document)
         if account:
             if account.password == password:
-                return jsonify(account), 200
+                return jsonify(account.to_dict()), 200
             else:
                 return jsonify({"error": "Senha incorreta"}), 401
         else:
@@ -148,7 +149,7 @@ def getAccountByNumberOnSelfBank(accountNumber):
     serialized_account = [account.to_dict()]
     return jsonify(serialized_account), 200
 
-
+# Chamada Interna
 @app.route('/prepareOnSelf', methods=['POST'])
 def prepareOnSelf():
     data = request.json
@@ -214,7 +215,6 @@ def depoisteOnSelf():
     data = request.json
     account_id = data['account_id']
     amount = data['amount']
-    print('Chegou mami')
     message = bank.depositOnSelf(account_id, amount)
     if message == "deposit":
         return jsonify({"status": "deposited"}), 200

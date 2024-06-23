@@ -88,7 +88,11 @@
             }
 
             function updateAccountInfo(account) {
-                $('#userName').text(account.name || account.fantasyName);
+                var namesSH = "";
+                if (Array.isArray(account.names) && account.names.length > 0) {
+                    namesSH = account.names.join(", ");
+                }
+                $('#userName').text(account.name || account.fantasyName || namesSH);
                 $('#accountBalance').text(`Saldo: R$ ${account.balance.toFixed(2)}`);
                 $('#bankName').text(account.bank_name); // Atualize o nome do banco
                 console.log(account.bank_name);
@@ -120,7 +124,10 @@
                 } else if (account.cnpj) {
                     type = 'cnpj';
                     document = String(account.cnpj);
-                } else {
+                }else if(account.cpfs){
+                    type = 'cpf';
+                    document = sessionStorage.getItem('document')
+                }else {
                     console.error('Tipo de conta não reconhecido.');
                     return;
                 }
@@ -196,6 +203,7 @@
             });
 
             function fetchAvailableAccounts(type, document) {
+                document = sessionStorage.getItem('document')
                 $.ajax({
                     url: `/accounts/${type}/${document}`,
                     type: "GET",
@@ -204,13 +212,28 @@
                         response.forEach(function(account) {
                             accountsHtml += `
                                 <div class="form-group">
-                                    <input type="checkbox" class="accountCheckbox" data-account-id="${account.accountNumber}" data-bank-name="${account.bank_name}">
+                                    <input type="checkbox" class="accountCheckbox" id="account${account.accountNumber}" data-account-id="${account.accountNumber}" data-bank-name="${account.bank_name}">
                                     <label for="account${account.accountNumber}">${account.bank_name} - Conta: ${account.accountNumber}</label>
-                                    <input type="number" class="form-control transferAmount" placeholder="Valor a ser transferido" required>
+                                    <input type="number" class="form-control transferAmount" placeholder="Valor a ser transferido" disabled>
                                 </div>
                             `;
                         });
                         $('#availableAccounts').html(accountsHtml);
+
+                        // Evento de mudança para habilitar/desabilitar o campo de entrada de valor
+                        $('.accountCheckbox').change(function() {
+                            // Obter o campo de entrada associado à checkbox
+                            var transferInput = $(this).closest('.form-group').find('.transferAmount');
+                            
+                            // Verificar se a checkbox está marcada
+                            if ($(this).is(':checked')) {
+                                // Habilitar o campo de entrada de valor
+                                transferInput.prop('disabled', false);
+                            } else {
+                                // Desabilitar o campo de entrada de valor e limpar o valor
+                                transferInput.prop('disabled', true).val('');
+                            }
+                        });
                     },
                     error: function(xhr, status, error) {
                         var errorMessage = xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : "Erro ao buscar contas";

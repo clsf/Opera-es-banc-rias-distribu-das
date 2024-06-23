@@ -22,19 +22,21 @@ $(document).ready(function() {
 
         var tipoConta = $('#tipoConta').val();
         var data = {
-            tipo_conta: tipoConta,
-            password: $('#password').val() // Obtém a senha do campo de senha comum
+            tipo_conta: tipoConta,            
         };
 
         // Adiciona dados específicos com base no tipo de conta
         if (tipoConta === 'pessoa_fisica') {
             data.cpf = $('#cpf').val();
+            data.password = $('#password').val();
         } else if (tipoConta === 'pessoa_juridica') {
             data.cnpj = $('#cnpj').val();
+            data.password = $('#passwordPj').val();
         } else if (tipoConta === 'compartilhada') {
-            data.cpfs = $('#cpfs').val().split(',');
+            data.cpf = $('#cpfShared').val();
+            data.password = $('#passwordShared').val();
         }
-
+        console.log(data)
         // Envia a requisição para o Flask
         $.ajax({
             url: "/login", // Rota corrigida para o endpoint de login
@@ -44,6 +46,13 @@ $(document).ready(function() {
             success: function(response) {
                 sessionStorage.setItem('account', JSON.stringify(response));
                 window.location.href = "/home";
+                if (tipoConta === 'pessoa_fisica') {
+                    sessionStorage.setItem('document', data.cpf);                   
+                } else if (tipoConta === 'pessoa_juridica') {
+                    sessionStorage.setItem('document', data.cnpj);                    
+                } else if (tipoConta === 'compartilhada') {
+                    sessionStorage.setItem('document', data.cpf);;                   
+                }
             },
             error: function(xhr, status, error) {
                 var errorMessage = xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : "Erro ao fazer login";

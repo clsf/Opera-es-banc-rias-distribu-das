@@ -16,7 +16,6 @@ class Bank:
 
     
     def findNamesOthersBanks(self):
-        print('BUSCANDO')
         bank1_url = os.getenv('BANK_1') 
         bank2_url = os.getenv('BANK_2') 
 
@@ -36,9 +35,9 @@ class Bank:
                 print(f"Erro ao fazer requisição para obter nome do banco: {e}")
     
 
-    def registerPjAccount(self, cnpj, fantasyName, password):
+    def registerPjAccount(self, cnpj, fantasyName, password, nameBank):
         self.numberAccount += 1
-        account = PjAccount(self.numberAccount, 0, cnpj, fantasyName, password)
+        account = PjAccount(self.numberAccount, 0, cnpj, fantasyName, password, nameBank)
         self.accounts[self.numberAccount] = account
         return account
 
@@ -52,17 +51,16 @@ class Bank:
         return account
 
     
-    def registerSharedAccount(self, cpfs, names, password):
+    def registerSharedAccount(self, cpfs, names, password, nameBank):
         self.numberAccount +=1
-        account = SharedAccount(self.numberAccount, 0, cpfs, names, password)
+        account = SharedAccount(self.numberAccount, 0, cpfs, names, password, nameBank)
         self.accounts[self.numberAccount] = account
         return account
 
 
     def getByAccountNumber(self, numberAccount, bankName):
         self.findNamesOthersBanks()
-        if bankName == "BANK_0":
-           print("pegou aqui ta safe")
+        if bankName == self.name:
            return self.getByAccountNumberOnSelf(numberAccount)
 
         bank_url = self.other_banks[bankName] 
@@ -142,9 +140,7 @@ class Bank:
         if account in self.accounts:
             account = self.accounts[account]
             if account.holdBalance < amount:
-                print("vish deu merda")
                 return "insufficient_funds"
-            print("não po sucesso")
             account.holdBalance -= amount
             return "ok"
         return "Account not found"
@@ -195,7 +191,7 @@ class Bank:
             if len(notPrepared) != 0:
 
                 for transfer in prepared:
-                    if transfer.bankName=="BANK_0":
+                    if transfer.bankName==self.name:
                         message = self.rollback(transfer.account, transfer.amount)
 
                     else:
@@ -257,9 +253,7 @@ class Bank:
             return "Transfer destination not found"
 
     def depositOnSelf(self, account, amount):
-        print("OLHA O DEPOSITO CHEGOU")
         account = int(account)
-        print(account, amount)
         account = self.accounts[account]
         
         if account != None: 
@@ -272,8 +266,6 @@ class Bank:
         
         
     def deposit(self, account, amount, bankName):
-        print('Entrou aqui no deposit')
-        print(bankName, self.name)
         self.findNamesOthersBanks()
         if bankName == self.name:
             return self.depositOnSelf(account, amount)
@@ -318,10 +310,10 @@ class Bank:
 
         banks = self.other_banks
         accounts = []
-
         for bank_url in banks:
             if bank_url != None:
                 try:
+                    bank_url = banks[bank_url]
                     response = requests.get(f"http://{bank_url}/accountSOnSelf/{type}/{document}", headers=headers)
                     response.raise_for_status()
                     accounts.extend(response.json())
