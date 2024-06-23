@@ -1,33 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Operações Bancárias</title>
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
 </head>
 <body>
-    <div class="container">
-        <h2>Login</h2>
-        <form method="post" action="{{ url_for('login') }}">
+    <div class="container mt-5">
+        <h1>Login</h1>
+        <form id="formLogin">
             <div class="form-group">
-                <label for="username">Nome de Usuário:</label>
-                <input type="text" id="username" name="username" required>
+                <label for="tipoConta">Tipo de Conta:</label>
+                <select class="form-control" id="tipoConta" required>
+                    <option value="">Selecione o tipo de conta</option>
+                    <option value="pessoa_fisica">Pessoa Física</option>
+                    <option value="pessoa_juridica">Pessoa Jurídica</option>
+                    <option value="compartilhada">Compartilhada</option>
+                </select>
             </div>
-            <div class="form-group">
-                <label for="password">Senha:</label>
-                <input type="password" id="password" name="password" required>
+            
+            <div id="formPf" style="display: none;">
+                <div class="form-group">
+                    <label for="cpf">CPF:</label>
+                    <input type="text" class="form-control" id="cpf">
+                </div>
+                <div class="form-group">
+                    <label for="password">Senha:</label>
+                    <input type="password" class="form-control" id="password">
+                </div>
             </div>
-            <button type="submit">Login</button>
-            <p>Não tem uma conta? <a href="{{ url_for('register') }}">Registre-se</a></p>
+
+            <div id="formPj" style="display: none;">
+                <div class="form-group">
+                    <label for="cnpj">CNPJ:</label>
+                    <input type="text" class="form-control" id="cnpj">
+                </div>
+                <div class="form-group">
+                    <label for="passwordPj">Senha:</label>
+                    <input type="password" class="form-control" id="passwordPj">
+                </div>
+            </div>
+
+            <div id="formShared" style="display: none;">
+                <div class="form-group">
+                    <label for="cpfs">CPF dos Titulares (separados por vírgula):</label>
+                    <input type="text" class="form-control" id="cpfs">
+                </div>
+                <div class="form-group">
+                    <label for="passwordShared">Senha:</label>
+                    <input type="password" class="form-control" id="passwordShared">
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Entrar</button>
         </form>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            {% for category, message in messages %}
-              <div class="alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
+
+        <div id="resultado"></div>
     </div>
+      <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <!-- Popper.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+  <!-- Bootstrap JS -->
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <!-- Seu arquivo login.js -->
+  <script src="static/login.js"></script> <!-- Ajuste o caminho conforme necessário -->
 </body>
 </html>

@@ -1,12 +1,36 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from bank import Bank
 from prepareDTO import PrepareDTO
 import time
 import os
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates', static_folder='static')
 bank = Bank("Claudia Bank")
 
+@app.route('/login')
+def login():
+    return render_template('login.html')
+
+@app.route('/login', methods=['POST'])
+def process_login():
+    data = request.json
+
+    tipo_conta = data.get('tipo_conta')
+    password = data.get('password')
+
+    if tipo_conta == 'pessoa_fisica' or tipo_conta == 'compartilhada':
+        document = data.get('cpf')
+    elif tipo_conta == 'pessoa_juridica':
+        document = data.get('cnpj')
+    else:
+        return jsonify({"error": "Tipo de conta inválido"}), 400
+
+    
+    return buscarcontaOnSelfWithPassword(tipo_conta, document, password)
+
+@app.route('/register')
+def register():
+    return render_template('register.html')
 
 @app.route('/contas', methods=['POST'])
 def criar_conta():
@@ -62,6 +86,37 @@ def buscar_contaOnSelf(type, document):
     serialized_accounts = [account.to_dict() if hasattr(account, 'to_dict') else account for account in accounts]
 
     return jsonify(serialized_accounts), 200
+
+@app.route('/accountSOnSelf/<type>/<document>/<password>', methods=['GET'])
+def buscarcontaOnSelfWithPassword(type, document, password):
+    if type in ['pessoa_fisica', 'compartilhada']:
+        accounts = bank.getAccountByCPFOnSelf(document)
+        if accounts:
+            if type == 'pessoa_fisica':
+                if accounts[0].password == password:
+                    return jsonify(accounts[0].to_dict()), 200
+                else:
+                    return jsonify({"error": "Senha incorreta"}), 401
+            else:  # compartilhada
+                for account in accounts:
+                    if account.password == password:
+                        return jsonify(account), 200
+                return jsonify({"error": "Senha incorreta"}), 401
+        else:
+            return jsonify({"error": "Conta não encontrada"}), 404
+    elif type == 'pessoa_juridica':
+        account = bank.getAccountByCnpjOnSelf(document)
+        if account:
+            if account.password == password:
+                return jsonify(account), 200
+            else:
+                return jsonify({"error": "Senha incorreta"}), 401
+        else:
+            return jsonify({"error": "Conta não encontrada"}), 404
+    else:
+        return jsonify({"error": "Tipo de documento inválido. Use 'cpf' ou 'cnpj'"}), 400
+
+
 
 
 @app.route('/accounts/bank/<bankName>/<accountNumber>', methods=['GET'])
