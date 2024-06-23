@@ -119,8 +119,8 @@ def buscarcontaOnSelfWithPassword(type, document, password):
     elif type == 'pessoa_juridica':
         account = bank.getAccountByCnpjOnSelf(document)
         if account:
-            if account.password == password:
-                return jsonify(account.to_dict()), 200
+            if account[0].password == password:
+                return jsonify(account[0].to_dict()), 200
             else:
                 return jsonify({"error": "Senha incorreta"}), 401
         else:
