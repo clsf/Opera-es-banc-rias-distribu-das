@@ -18,7 +18,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"tipo_conta\": \"pessoa_fisica\",\n    \"name\": \"Fulano de Tal\",\n    \"cpf\": \"123.456.789-00\",\n    \"password\": \"senha123\"\n}",
+					"raw": "{\n    \"tipo_conta\": \"pessoa_fisica\",\n    \"name\": \"Fulano de Tal\",\n    \"cpf\": \"124\",\n    \"password\": \"senha123\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -48,7 +48,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://127.0.0.1:5000/contas/cpf/123",
+					"raw": "http://127.0.0.1:5000/accounts/cpf/123",
 					"protocol": "http",
 					"host": [
 						"127",
@@ -58,7 +58,7 @@
 					],
 					"port": "5000",
 					"path": [
-						"contas",
+						"accounts",
 						"cpf",
 						"123"
 					]
@@ -104,7 +104,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"account_id\": 1,\n    \"amount\": 10\n}",
+					"raw": "{\n    \"account_id\": 1,\n    \"amount\": 10,\n    \"bank_name\": \"BANK_0\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -112,7 +112,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://127.0.0.1:5000/contas/deposit",
+					"raw": "http://127.0.0.1:5000/account/deposit",
 					"protocol": "http",
 					"host": [
 						"127",
@@ -122,7 +122,7 @@
 					],
 					"port": "5000",
 					"path": [
-						"contas",
+						"account",
 						"deposit"
 					]
 				}
@@ -155,6 +155,108 @@
 					"port": "5000",
 					"path": [
 						"commit"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetBalance",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:5000/balance/cpf/12",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "5000",
+					"path": [
+						"balance",
+						"cpf",
+						"12"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetAccountWithOtherBanks",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:5000/accounts/bank/BANK_1/1",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "5000",
+					"path": [
+						"accounts",
+						"bank",
+						"BANK_1",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Transfer complete",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"account_destiny\": 1,\n    \"bank_destiny\": \"BANK_1\",\n    \"transfer\": [\n        {\n        \"account_id\": 1,\n        \"amount\": 2,\n        \"bank_name\": \"BANK_0\"  \n        }\n    ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:5000/transfer",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "5000",
+					"path": [
+						"transfer"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getBankName",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:5000/bank_name",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "5000",
+					"path": [
+						"bank_name"
 					]
 				}
 			},

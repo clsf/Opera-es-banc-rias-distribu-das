@@ -14,3 +14,11 @@ docker build -t bank .
 
 docker run -it --network=host -e FLASK_PORT=5001 -e BANK_1=0.0.0.0:5000 -e BANK_NAME=BANK8 bank
 
+
+# Etapa 1: Build da imagem
+docker build -t claudiainees/my_images:bank .
+
+# Etapa 3: Push da imagem para o Docker Hub
+docker push claudiainees/my_images:bank
+
+docker pull claudiainees/my_images:bank
