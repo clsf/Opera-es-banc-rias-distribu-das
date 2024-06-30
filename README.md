@@ -34,3 +34,5 @@ Assim, todas as aplicações dos bancos vão ser iniciadas em cada porta escolhi
 ## Uso
 
 ## Estrutura do Projeto
+O projeto possui a seguinte estrutura:
+- Account: Na pasta [account](./account) possui as classes que definem as características de cada conta (pessoa física, jurídica ou conta compartilhada)
