@@ -17,11 +17,19 @@ O projeto permitir ser inicializado através do docker, a configuração atual p
 Após ter baixado a imagem, pode instanciar os três em bancos em terminais distintos executando o seguinte comando:
 #### Para o primeiro terminal:
 
-      docker run -it --network=host -e FLASK_PORT=5001 -e BANK_1=0.0.0.0:5000 -e BANK_NAME=BANK1 claudiainees/my_images:bank
+      docker run -it --network=host -e FLASK_PORT=5000 -e BANK_1=0.0.0.0:5001 -e BANK_2=0.0.0.0:5002 -e BANK_NAME=BANK1 claudiainees/my_images:bank
       
-Você ṕodar dar o nome que quiser ao banco na variável de ambiente "BANK_NAME"
+Você ṕodar dar o nome que quiser ao banco na variável de ambiente "BANK_NAME". O IP e a porta das variáveos "BANK_1" e "BANK_2" devem ser alteradas caso as portas já estejam em uso, ou vá testar as aplicações em computadores distintos. 
 
+#### Para o segundo terminal:
 
+      docker run -it --network=host -e FLASK_PORT=5001 -e BANK_1=0.0.0.0:5000 -e BANK_2=0.0.0.0:5002 -e BANK_NAME=BANK2 claudiainees/my_images:bank
+
+#### Para o terceiro terminal:
+
+      docker run -it --network=host -e FLASK_PORT=5002 -e BANK_1=0.0.0.0:5000 -e BANK_2=0.0.0.0:5001 -e BANK_NAME=BANK3 claudiainees/my_images:bank
+
+Assim, todas as aplicações dos bancos vão ser iniciadas em cada porta escolhida.
 
 ## Uso
 
