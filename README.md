@@ -122,7 +122,7 @@ Na conta de destino irá aparecer o valor transferido, é necessário a atualiza
 O projeto possui a seguinte estrutura:
 - Account: Na pasta [account](./account) possui as classes que definem as características de cada conta (pessoa física, jurídica ou conta compartilhada)
 - Bank: Na classe [bank](./bank.py) possui todos os atributos e métodos necessários para o funcionamento do banco (como criação de contas, busca de contas, trasnferências, depósitos etc)
-- Controller: No controller [endpointTest](./endpointTest.py) possui as rotas para cada funcionalidade do banco, para além de administrar qual dever ser a tela exibida. 
+- Controller: No controller [main](./main.py) possui as rotas para cada funcionalidade do banco, para além de administrar qual dever ser a tela exibida. 
 
 ## Construção do projeto
 #### Utilização do protocolo HTTP para comunicação entre os bancos
