@@ -14,7 +14,7 @@ class Bank:
         self.numberAccount = 0;
         self.other_banks = {}
 
-    
+    #Função para preocurar os nomes dos outros bancos com base na variável de ambiente e atualizar o dicionário other_banks
     def findNamesOthersBanks(self):
         bank1_url = os.getenv('BANK_1') 
         bank2_url = os.getenv('BANK_2') 
@@ -34,13 +34,14 @@ class Bank:
             except requests.exceptions.RequestException as e:
                 print(f"Erro ao fazer requisição para obter nome do banco: {e}")
     
-
+    #Cadastrando conta pessoa juridica
     def registerPjAccount(self, cnpj, fantasyName, password, nameBank):
         self.numberAccount += 1
         account = PjAccount(self.numberAccount, 0, cnpj, fantasyName, password, nameBank)
         self.accounts[self.numberAccount] = account
         return account
 
+    #Cadastrando conta pessoa fisica
     def registerPfAccount(self, cpf, name, passowrd, nameBank):
         for account in self.accounts.values():
             if isinstance(account, PfAccount) and account.cpf == cpf:
@@ -50,14 +51,14 @@ class Bank:
         self.accounts[self.numberAccount] = account
         return account
 
-    
+    #Cadastrando conta compartilhada
     def registerSharedAccount(self, cpfs, names, password, nameBank):
         self.numberAccount +=1
         account = SharedAccount(self.numberAccount, 0, cpfs, names, password, nameBank)
         self.accounts[self.numberAccount] = account
         return account
 
-
+    #Buscar conta a partir do número da conta, verifica se o nome do banco é o dele próprio, se não for, chama o banco respectivo
     def getByAccountNumber(self, numberAccount, bankName):
         self.findNamesOthersBanks()
         if bankName == self.name:
@@ -77,6 +78,7 @@ class Bank:
 
         return None
 
+    #Chamada interna para buscar a conta no próprio banco
     def getByAccountNumberOnSelf(self, numberAccount):
         numberAccount = int(numberAccount)
         if numberAccount in self.accounts:
@@ -85,7 +87,7 @@ class Bank:
             print(f"Conta com número {numberAccount} não encontrada.")
             return None
         
-
+    #Buscando contas pelo cpf, busca em todos os bancos inclusive no próprio da requisição
     def getAccountByCpf(self, cpf):
         self.findNamesOthersBanks()
         accountsFinded = self.getAccountByCPFOnSelf(cpf)
@@ -93,6 +95,7 @@ class Bank:
         all_accounts = accountsFinded + otherBanksAccount
         return all_accounts
 
+    #Busca conta pelo cpf (pode ser pessoa fisica ou conta compartilhada)
     def getAccountByCPFOnSelf(self, cpf):
         accountsFinded = []
         for account in self.accounts.values():
@@ -104,7 +107,7 @@ class Bank:
         return accountsFinded
 
 
-
+    #Busca conta por cnpj no próprio banco e em outros bancos
     def getAccountByCnpj(self, cnpj):
         self.findNamesOthersBanks()
         accountsFinded = self.getAccountByCnpjOnSelf(cnpj)
@@ -112,6 +115,7 @@ class Bank:
         all_accounts = accountsFinded + otherBanksAccount
         return all_accounts
     
+    #Busca conta por cnpj no próprio banco
     def getAccountByCnpjOnSelf(self, cnpj):
         accountsFinded = []
         for account in self.accounts.values():
@@ -119,7 +123,7 @@ class Bank:
                 accountsFinded.append(account)
         return accountsFinded
 
-    
+    #Prepara para transferência validando o timestemp
     def prepareTransfer(self, account, amount, transaction_timestamp):
         if account in self.accounts:
             account = self.accounts[account]
@@ -135,7 +139,7 @@ class Bank:
                 return "insufficient_funds"
         return "Account not found"
     
-
+    #Transferência do saldo
     def transfer(self, account, amount):
         if account in self.accounts:
             account = self.accounts[account]
@@ -145,14 +149,15 @@ class Bank:
             return "ok"
         return "Account not found"
 
+    #Prepara todos os bancos para transferir
     def prepareAllToTransfer(self, transfers, account_destiny, bank_destiny):
 
-        account = self.getByAccountNumber(account_destiny, bank_destiny)
+        account = self.getByAccountNumber(account_destiny, bank_destiny) #Verifica existência da conta de destino
         if account :
 
             prepared = []
             notPrepared = []
-
+            #Valida em todos os bancos se estão prontos para transferir     
             for transfer in transfers:
                 print(transfer.bankName)
                 if transfer.bankName== self.name:
@@ -188,7 +193,7 @@ class Bank:
                     else:
                         notPrepared.append(transfer)    
 
-            if len(notPrepared) != 0:
+            if len(notPrepared) != 0: #Valida se existe algum banco que não está preparado, se tiver, faz rollback nos que estão preparados
 
                 for transfer in prepared:
                     if transfer.bankName==self.name:
@@ -217,7 +222,7 @@ class Bank:
                                     
 
                 return "Error"
-            else:
+            else: #Commita todos os preparados 
                 totalAmount = 0;
                 for transfer in prepared:
                     if transfer.bankName==self.name:
@@ -245,13 +250,14 @@ class Bank:
                                         tryAgain = True
                                 except requests.exceptions.RequestException as req_err:
                                     print(f"Request Error from {bank_url}: {req_err}")
-                print('Indo depositar')
-                self.deposit(account_destiny, totalAmount, bank_destiny)                    
+
+                self.deposit(account_destiny, totalAmount, bank_destiny)    #Deposita na conta de destino                
                 return "Success"
 
         else:
             return "Transfer destination not found"
 
+    #Deposita na própria conta
     def depositOnSelf(self, account, amount):
         account = int(account)
         account = self.accounts[account]
@@ -264,7 +270,7 @@ class Bank:
         else: 
             return "Account not found"
         
-        
+    #Deposita com base no nome do banco e a conta fornecida    
     def deposit(self, account, amount, bankName):
         self.findNamesOthersBanks()
         if bankName == self.name:
@@ -279,7 +285,7 @@ class Bank:
                 "account_id": account,
                 "amount": amount
             }
-            tryAgain = True;
+            tryAgain = True; #Fica tentando transferir até conseguir 
             while tryAgain:
                 try:
                     response = requests.post(f"http://{bank_url}/account/depositOnSelf", headers=headers, data=json.dumps(body))
@@ -294,7 +300,8 @@ class Bank:
             
             return account
         return "Account or Bank not found"
-            
+
+    #Dá rollback no que estava preparado em si próprio        
     def rollback(self, account, amount):
         if account in self.accounts:
             account = self.accounts[account]
@@ -303,6 +310,7 @@ class Bank:
             return "ok"
         return "Account not found"
     
+    #Pega as contas de outros bancos com base no tipo de documento e no documento em si
     def getOtherBanksAccount(self, document, type):
         
         headers = {'Content-Type': 'application/json'}
